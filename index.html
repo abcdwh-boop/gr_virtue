@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>길음중학교 미덕 챌린지</title>
+    <style>
+        :root {
+            --bg-main: #f0f7ff;
+            --learn-color: #e3f2fd;
+            --learn-border: #45aaf2;
+            --happy-color: #fff4e3;
+            --happy-border: #ff9f43;
+            --growth-color: #e3f9e5;
+            --growth-border: #4ecca3;
+            --card-color: #ffffff;
+            --text-dark: #2d3436;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            font-family: 'Pretendard', -apple-system, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+            overflow-x: hidden;
+            color: var(--text-dark);
+        }
+
+        h1 { margin-bottom: 5px; font-size: 2.2rem; text-shadow: 1px 1px 0 white; }
+        .desc { color: #666; margin-bottom: 20px; font-size: 1.1rem; font-weight: bold; }
+        .tips { color: #e94560; font-size: 0.9rem; margin-top: -10px; margin-bottom: 15px; }
+
+        /* 카드 보관함 */
+        #virtue-pool {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            background: white;
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            max-width: 1100px;
+            margin-bottom: 30px;
+            min-height: 120px;
+            justify-content: center;
+            transition: 0.3s;
+        }
+
+        /* 분류 구역 컨테이너 */
+        .drop-zone-container {
+            display: flex;
+            gap: 20px;
+            width: 100%;
+            max-width: 1200px;
+            justify-content: center;
+        }
+
+        .drop-zone {
+            flex: 1;
+            min-height: 400px;
+            border-radius: 20px;
+            padding: 20px;
+            text-align: center;
+            border: 3px dashed #ccc;
+            transition: 0.3s;
+            display: flex;
+            flex-wrap: wrap;
+            align-content: flex-start;
+            justify-content: center;
+            gap: 10px;
+            position: relative;
+        }
+
+        .drop-zone h2 { width: 100%; margin-top: 0; font-size: 1.6rem; margin-bottom: 15px; }
+        
+        #zone-learn { background: var(--learn-color); border-color: var(--learn-border); }
+        #zone-happy { background: var(--happy-color); border-color: var(--happy-border); }
+        #zone-growth { background: var(--growth-color); border-color: var(--growth-border); }
+
+        /* 개별 미덕 카드 스타일 */
+        .virtue-card {
+            background: var(--card-color);
+            padding: 12px 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            cursor: grab;
+            font-weight: bold;
+            font-size: 1.1rem;
+            user-select: none;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            border: 2px solid #eee;
+            position: relative;
+            z-index: 1;
+        }
+
+        .virtue-card:hover { transform: translateY(-3px); box-shadow: 0 6px 12px rgba(0,0,0,0.15); }
+        .virtue-card:active { cursor: grabbing; transform: scale(0.95); }
+        
+        /* 선택된 카드의 엄청난 강조 효과 */
+        .virtue-card.selected-huge {
+            border: 4px solid #ff6b6b;
+            background-color: #ffeaea;
+            color: #d63031;
+            transform: scale(1.5) !important;
+            z-index: 10;
+            box-shadow: 0 15px 30px rgba(255,107,107,0.4);
+            pointer-events: none;
+        }
+
+        /* 공통 팝업(모달) 스타일 */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: 0.3s;
+        }
+
+        .modal-overlay.active { opacity: 1; visibility: visible; }
+
+        .modal-content {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 600px;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.2);
+            transform: translateY(20px);
+            transition: 0.3s;
+            position: relative;
+        }
+
+        .modal-overlay.active .modal-content { transform: translateY(0); }
+
+        .modal-content h2 { font-size: 2rem; margin-top: 0; margin-bottom: 15px; color: #0984e3; }
+        .modal-content p { font-size: 1.25rem; line-height: 1.6; color: #444; margin-bottom: 30px; word-break: keep-all; }
+        
+        .modal-btn {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 12px 35px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .modal-btn:hover { background: #ff4757; transform: scale(1.05); }
+
+        /* [뜻 사전 팝업] 특별 스타일 */
+        #def-modal .modal-content { border-top: 8px solid #45aaf2; max-width: 450px; padding: 30px; }
+        #def-modal h2 { color: #45aaf2; font-size: 1.8rem; margin-bottom: 10px; }
+        #def-modal p { font-size: 1.1rem; color: #333; margin-bottom: 0; background: #f8f9fa; padding: 15px; border-radius: 10px;}
+        .close-x {
+            position: absolute; top: 15px; right: 20px; font-size: 1.5rem; color: #aaa; cursor: pointer; font-weight: bold;
+        }
+        .close-x:hover { color: #333; }
+
+        /* [마지막 대형 팝업] 특별 스타일 */
+        .final-modal-content {
+            max-width: 900px !important;
+            padding: 50px 60px !important;
+            background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%) !important;
+            border: 5px solid #ff6b6b !important;
+        }
+        .final-modal-content h2 { font-size: 3rem !important; color: #ff6b6b !important; margin-bottom: 20px; }
+        .final-modal-content p { font-size: 1.6rem !important; font-weight: bold !important; color: #2d3436 !important; line-height: 1.7; }
+        
+        .result-highlight {
+            display: inline-block;
+            background: #ffeaa7;
+            padding: 10px 20px;
+            border-radius: 15px;
+            margin: 15px 0;
+            font-size: 2.5rem !important;
+            color: #d63031 !important;
+        }
+        
+        .final-addition {
+            display: block;
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 2px dashed #ccc;
+            font-size: 1.5rem;
+            color: #0984e3;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🏫 길음중학교 미덕 챌린지</h1>
+    <p class="desc" id="main-desc">카드를 드래그하여 알맞은 곳으로 분류해 보세요!</p>
+    <p class="tips">💡 단어 뜻이 궁금하면 카드를 <b>더블 클릭(따닥!)</b> 하세요.</p>
+
+    <div id="virtue-pool" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+
+    <div class="drop-zone-container">
+        <div id="zone-learn" class="drop-zone" ondrop="drop(event)" ondragover="allowDrop(event)">
+            <h2>📚 배움</h2>
+        </div>
+        <div id="zone-happy" class="drop-zone" ondrop="drop(event)" ondragover="allowDrop(event)">
+            <h2>☀️ 행복</h2>
+        </div>
+        <div id="zone-growth" class="drop-zone" ondrop="drop(event)" ondragover="allowDrop(event)">
+            <h2>🌱 성장</h2>
+        </div>
+    </div>
+
+    <div id="modal" class="modal-overlay">
+        <div id="modal-box" class="modal-content">
+            <h2 id="modal-title">제목</h2>
+            <p id="modal-text">내용</p>
+            <button class="modal-btn" id="modal-dynamic-btn">확인</button>
+        </div>
+    </div>
+
+    <div id="def-modal" class="modal-overlay" onclick="closeDefModal(event)">
+        <div class="modal-content">
+            <span class="close-x" onclick="document.getElementById('def-modal').classList.remove('active')">&times;</span>
+            <h2 id="def-title">미덕 이름</h2>
+            <p id="def-text">미덕 뜻</p>
+        </div>
+    </div>
+
+    <script>
+        // 선생님께서 엄선하신 20가지 미덕을 골고루 섞어두었습니다! (순서 고정)
+        const virtueDefinitions = {
+            "긍정": "상황의 밝은 면을 먼저 보는 태도",
+            "탐구심": "근본적인 원리를 알고자 하는 열망",
+            "인내": "목표를 위해 어려움을 참고 견디는 힘",
+            "공감": "타인의 감정을 함께 느끼는 능력",
+            "호기심": "당연한 것에 의문을 갖는 마음",
+            "도전": "두렵지만 새로운 일에 뛰어드는 용기",
+            "성실": "꾸준히 학습에 임하는 태도",
+            "친절": "낯선 이에게도 따뜻한 손길을 내미는 것",
+            "독립심": "남에게 의존하지 않고 스스로 서는 힘!",
+            "질문": "답을 찾아가는 적극적인 태도",
+            "감사": "주어진 것에 고마움을 느끼는 마음",
+            "자기 성찰": "자신의 행동을 되돌아보고 반성하려는 마음",
+            "집중": "몰입을 통해 깊이 있게 파고드는 힘",
+            "수용": "나의 부족함과 타인의 다름을 인정함",
+            "회복탄력성": "실패해도 다시 일어서는 마음의 근육",
+            "경청": "타인의 지혜를 귀담아듣는 자세",
+            "다정함": "주변 사람을 따뜻하게 대하는 태도",
+            "성취": "목표를 달성하며 느끼는 유능감",
+            "개방성": "새로운 정보나 의견을 편견 없이 받아들임",
+            "배려": "타인의 상황을 먼저 생각하는 마음"
+        };
+
+        let virtues = Object.keys(virtueDefinitions);
+
+        let phase = 1; 
+        const pool = document.getElementById('virtue-pool');
+
+        window.onload = () => {
+            virtues.forEach((v, index) => {
+                const card = document.createElement('div');
+                card.className = 'virtue-card';
+                card.textContent = v;
+                card.id = 'card-' + index;
+                card.draggable = true;
+                card.ondragstart = drag;
+                card.ondblclick = (e) => showDefinition(v, e);
+                pool.appendChild(card);
+            });
+            
+            showModal(
+                "🏫 길음인상 안내", 
+                "길음중학교의 교훈은 <br><b>'배움, 행복, 성장'</b>입니다.<br><br>따라서 학기 말에 배움, 행복, 성장을 실천한 학생에게 <b>'길음인상'</b>이 부여됩니다!", 
+                "다음", 
+                showSecondIntro
+            );
+        };
+
+        function showSecondIntro() {
+            showModal(
+                "✨ 미덕 분류하기", 
+                "그러면, 어떤 미덕들이 <br><b>배움, 행복, 성장</b>에 해당하는지<br>한번 분류해볼까요?", 
+                "시작하기", 
+                closeModal
+            );
+        }
+
+        function showDefinition(virtueName, event) {
+            event.stopPropagation();
+            document.getElementById('def-title').textContent = virtueName;
+            document.getElementById('def-text').textContent = virtueDefinitions[virtueName];
+            document.getElementById('def-modal').classList.add('active');
+        }
+
+        function closeDefModal(event) {
+            if (event.target.id === 'def-modal') {
+                document.getElementById('def-modal').classList.remove('active');
+            }
+        }
+
+        function allowDrop(ev) { ev.preventDefault(); }
+        function drag(ev) { if (phase !== 1) return; ev.dataTransfer.setData("text", ev.target.id); }
+
+        function drop(ev) {
+            if (phase !== 1) return;
+            ev.preventDefault();
+            var data = ev.dataTransfer.getData("text");
+            var draggedElement = document.getElementById(data);
+            
+            let target = ev.target;
+            while (target && !target.classList.contains('drop-zone') && target.id !== 'virtue-pool') { target = target.parentElement; }
+            
+            if (target) { target.appendChild(draggedElement); checkCategorizationComplete(); }
+        }
+
+        function checkCategorizationComplete() {
+            if (pool.children.length === 0) { setTimeout(startSelectionPhase, 500); }
+        }
+
+        function startSelectionPhase() {
+            phase = 2;
+            document.getElementById('main-desc').textContent = "각 카테고리에서 우리 반에 가장 필요한 미덕을 클릭하세요!";
+            pool.style.display = 'none';
+
+            const cards = document.querySelectorAll('.virtue-card');
+            cards.forEach(card => {
+                card.draggable = false;
+                card.style.cursor = 'pointer';
+                card.onclick = () => selectCard(card);
+            });
+
+            showModal(
+                "🎉 분류 완료!", 
+                "한 학기 동안 우리 반에서 실천할 미덕을<br><b>항목당 한 가지씩 토의를 통해</b> 골라봅시다!", 
+                "선택하러 가기", 
+                closeModal
+            );
+        }
+
+        function selectCard(card) {
+            if (phase !== 2) return;
+            const parent = card.parentElement;
+            const siblings = parent.getElementsByClassName('virtue-card');
+            Array.from(siblings).forEach(s => s.classList.remove('selected-huge'));
+            
+            card.classList.add('selected-huge');
+            checkFinalMission();
+        }
+
+        function checkFinalMission() {
+            const hasLearn = document.querySelector('#zone-learn .selected-huge');
+            const hasHappy = document.querySelector('#zone-happy .selected-huge');
+            const hasGrowth = document.querySelector('#zone-growth .selected-huge');
+
+            if (hasLearn && hasHappy && hasGrowth) {
+                setTimeout(() => { showFinalModal(hasLearn.textContent, hasHappy.textContent, hasGrowth.textContent); }, 800);
+            }
+        }
+
+        function showModal(title, text, btnText, onClickFunction) {
+            document.getElementById('modal-title').innerHTML = title;
+            document.getElementById('modal-text').innerHTML = text;
+            
+            const btn = document.getElementById('modal-dynamic-btn');
+            btn.textContent = btnText;
+            btn.onclick = onClickFunction; 
+            
+            document.getElementById('modal').classList.add('active');
+        }
+
+        function closeModal() { 
+            document.getElementById('modal').classList.remove('active'); 
+        }
+
+        function showFinalModal(l, h, g) {
+            const modalBox = document.getElementById('modal-box');
+            modalBox.classList.add('final-modal-content');
+            
+            const title = "🏆 미션 완료! 🏆";
+            const text = `우리 반의 이번 학기 미덕 세트<br>
+                          <span class="result-highlight">[ ${l}, ${h}, ${g} ]</span><br>
+                          한 학기 동안 이 미덕들을 멋지게 실천하는 친구가 있는지<br>눈을 크게 뜨고 잘 관찰해 봅시다!👀
+                          <span class="final-addition">그리고 세 가지의 미덕을 실천하는<br><b>구체적인 방법에는 무엇이 있을지</b> 얘기해보고,<br>학급회의록에 적어봅시다!📝</span>`;
+            
+            showModal(title, text, "다짐하기!", closeModal);
+        }
+    </script>
+</body>
+</html>
